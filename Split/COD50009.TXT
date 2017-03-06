@@ -1,0 +1,122 @@
+OBJECT Codeunit 50009 BF Web Viewer Management
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/02/17;
+    Time=[ 7:37:00 PM];
+    Modified=Yes;
+    Version List=WEBVIEWER;
+  }
+  PROPERTIES
+  {
+    OnRun=BEGIN
+            IF IsWebViewerVisible THEN
+              DisableWebViewerForCurrentUser
+            ELSE
+              EnableWebViewerForCurrentUser;
+          END;
+
+  }
+  CODE
+  {
+
+    LOCAL PROCEDURE EnableWebViewerForCurrentUser@50050();
+    VAR
+      lUserPreference@50050 : Record 1306;
+    BEGIN
+      lUserPreference.EnableInstruction(GetWebViewerCode);
+    END;
+
+    LOCAL PROCEDURE DisableWebViewerForCurrentUser@50051();
+    VAR
+      lUserPreference@50050 : Record 1306;
+    BEGIN
+      lUserPreference.DisableInstruction(GetWebViewerCode);
+    END;
+
+    PROCEDURE IsWebViewerVisible@50052() : Boolean;
+    VAR
+      lCompany@50000 : Record 2000000006;
+      lUserPreference@50050 : Record 1306;
+    BEGIN
+      IF IsEvaluationCompany THEN
+        EXIT(TRUE);
+
+      EXIT(NOT lUserPreference.GET(USERID,GetWebViewerCode));
+    END;
+
+    LOCAL PROCEDURE GetWebViewerCode@50053() : Code[20];
+    BEGIN
+      EXIT('WEBVIEWER');
+    END;
+
+    PROCEDURE IsEvaluationCompany@50000() : Boolean;
+    VAR
+      lCompany@50000 : Record 2000000006;
+    BEGIN
+      lCompany.GET(COMPANYNAME);
+      EXIT(lCompany."Evaluation Company");
+    END;
+
+    PROCEDURE AddURLToProfile@50001(pProfileID@50000 : Code[30];pURL@50001 : Text[250];pURLName@50003 : Text[50];pIsDefault@50002 : Boolean);
+    VAR
+      lBFWebViewerSetup@50004 : Record 50002;
+      lMissingProfileError@50005 : TextConst 'ENU=You must provide a Profile ID.';
+      lMissingURLError@50006 : TextConst 'ENU=You must provide a URL.';
+      lURLId@50007 : Integer;
+    BEGIN
+      IF pProfileID = '' THEN
+        ERROR(lMissingProfileError);
+
+      IF pURL = '' THEN
+        ERROR(lMissingURLError);
+
+      IF IsExistingURL(pProfileID,pURL) THEN
+        EXIT;
+
+      lURLId := GetNextURLId(pProfileID,pURL);
+
+      InsertURLRecord(pProfileID,lURLId,pURL,pURLName,pIsDefault);
+    END;
+
+    LOCAL PROCEDURE IsExistingURL@50006(pProfileID@50001 : Code[30];pURL@50000 : Text[250]) : Boolean;
+    VAR
+      lBFWebViewerSetup@50002 : Record 50002;
+    BEGIN
+      lBFWebViewerSetup.SETRANGE("Profile ID",pProfileID);
+      lBFWebViewerSetup.SETRANGE(URL,pURL);
+      EXIT(lBFWebViewerSetup.FINDFIRST);
+    END;
+
+    LOCAL PROCEDURE GetNextURLId@50008(pProfileID@50001 : Code[30];pURL@50000 : Text[250]) : Integer;
+    VAR
+      lBFWebViewerSetup@50002 : Record 50002;
+    BEGIN
+      lBFWebViewerSetup.SETRANGE("Profile ID",pProfileID);
+      lBFWebViewerSetup.SETRANGE(URL,pURL);
+      IF lBFWebViewerSetup.FINDLAST THEN
+        EXIT(lBFWebViewerSetup."URL ID" + 10000)
+      ELSE
+        EXIT(10000);
+    END;
+
+    LOCAL PROCEDURE InsertURLRecord@50010(pProfileID@50003 : Code[30];pURLId@50004 : Integer;pURL@50002 : Text[250];pURLName@50001 : Text[50];pIsDefault@50000 : Boolean);
+    VAR
+      lBFWebViewerSetup@50005 : Record 50002;
+    BEGIN
+      lBFWebViewerSetup.INIT;
+
+      lBFWebViewerSetup.VALIDATE("Profile ID",pProfileID);
+      lBFWebViewerSetup."URL ID" := pURLId;
+      lBFWebViewerSetup.URL := pURL;
+      lBFWebViewerSetup.VALIDATE(Default,pIsDefault);
+      lBFWebViewerSetup.Name := pURLName;
+
+      lBFWebViewerSetup.INSERT(TRUE);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

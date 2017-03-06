@@ -1,0 +1,72 @@
+OBJECT Page 50003 BF Web Viewer Full Screen
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/02/17;
+    Time=[ 7:37:00 PM];
+    Modified=Yes;
+    Version List=WEBVIEWER;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Web Viewer;
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    LinksAllowed=No;
+    SourceTable=Table50002;
+    PageType=Card;
+    SourceTableTemporary=Yes;
+    ShowFilter=No;
+    OnOpenPage=BEGIN
+                 INIT;
+                 IF INSERT THEN;
+               END;
+
+  }
+  CONTROLS
+  {
+    { 1   ;    ;Container ;
+                Name=Container;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Field     ;
+                Name=WebPageViewer;
+                ApplicationArea=#All;
+                ControlAddIn=[Microsoft.Dynamics.Nav.Client.WebPageViewer;PublicKeyToken=31bf3856ad364e35] }
+
+  }
+  CODE
+  {
+    VAR
+      gURL@50000 : Text;
+
+    PROCEDURE SetURL@50004(pURL@50000 : Text);
+    BEGIN
+      gURL := pURL;
+    END;
+
+    EVENT WebPageViewer@-2::ControlAddInReady@8(callbackUrl@1000 : Text);
+    BEGIN
+      CurrPage.WebPageViewer.Navigate(gURL);
+    END;
+
+    EVENT WebPageViewer@-2::DocumentReady@9();
+    BEGIN
+    END;
+
+    EVENT WebPageViewer@-2::Callback@10(data@1000 : Text);
+    BEGIN
+    END;
+
+    EVENT WebPageViewer@-2::Refresh@11(callbackUrl@1000 : Text);
+    BEGIN
+      CurrPage.WebPageViewer.Navigate(gURL);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

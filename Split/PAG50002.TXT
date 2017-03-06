@@ -1,0 +1,212 @@
+OBJECT Page 50002 BF Web Viewer
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/02/17;
+    Time=[ 7:37:00 PM];
+    Modified=Yes;
+    Version List=WEBVIEWER;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Web Viewer;
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    SourceTable=Table50002;
+    PageType=CardPart;
+    SourceTableTemporary=Yes;
+    OnOpenPage=BEGIN
+                 FilterRoleCenter;
+
+                 INIT;
+                 EVALUATE("Role Center ID",gRoleIDFilter);
+                 IF INSERT THEN;
+
+
+                 LoadStartingURL;
+                 SetIsShowHideActionAvailable;
+                 SetIsShowFullScreenAvailable;
+                 CurrPage.UPDATE(FALSE);
+               END;
+
+    OnAfterGetRecord=BEGIN
+                       SetWebViewerVisibility;
+                       CurrPage.UPDATE(FALSE);
+                     END;
+
+    ActionList=ACTIONS
+    {
+      { 50000   ;0   ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 1101769002;1 ;Action    ;
+                      Name=Show Fullscreen;
+                      ApplicationArea=#All;
+                      Promoted=Yes;
+                      Visible=gShowExpandToFullScreen;
+                      PromotedIsBig=Yes;
+                      Image=Dimensions;
+                      PromotedCategory=Process;
+                      OnAction=BEGIN
+                                 LaunchFullScreenViewer;
+                               END;
+                                }
+      { 1101769001;1 ;Action    ;
+                      Name=Select URL;
+                      ApplicationArea=#All;
+                      Image=LaunchWeb;
+                      OnAction=BEGIN
+                                 SelectURL;
+                               END;
+                                }
+      { 50002   ;1   ;Action    ;
+                      Name=Show/Hide Web Viewer;
+                      ApplicationArea=#All;
+                      RunObject=Codeunit 50009;
+                      Visible=gShowHideVisible;
+                      Image=Web }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;    ;Container ;
+                Name=Container;
+                ContainerType=ContentArea }
+
+    { 50006;1  ;Group     ;
+                Visible=FALSE;
+                GroupType=Group }
+
+    { 50004;2  ;Field     ;
+                Name=GetStarted;
+                CaptionML=ENU=GetStarted;
+                ApplicationArea=#All;
+                SourceExpr=gGetStartedMessageText;
+                Editable=false;
+                Style=StrongAccent;
+                StyleExpr=TRUE;
+                ShowCaption=No }
+
+    { 50001;1  ;Group     ;
+                Visible=gShowWebViewer;
+                GroupType=Group }
+
+    { 2   ;2   ;Field     ;
+                Name=WebPageViewer;
+                ApplicationArea=#All;
+                ControlAddIn=[Microsoft.Dynamics.Nav.Client.WebPageViewer;PublicKeyToken=31bf3856ad364e35] }
+
+  }
+  CODE
+  {
+    VAR
+      gBFWebViewerSetup@50000 : Record 50002;
+      gBFWebViewerManagement@50005 : Codeunit 50009;
+      gBFWebViewerSetupPage@50001 : Page 50004;
+      gURL@50002 : Text;
+      gRoleIDFilter@50003 : Text;
+      gShowWebViewer@50004 : Boolean;
+      gShowHideVisible@50006 : Boolean;
+      gShowGetStarted@50007 : Boolean;
+      gGetStartedMessageText@50008 : TextConst 'ENU=Get started by entering in some URLs';
+      gShowExpandToFullScreen@50009 : Boolean;
+
+    LOCAL PROCEDURE LoadStartingURL@50000();
+    VAR
+      lBFWebViewerSetup@50000 : Record 50002;
+    BEGIN
+      lBFWebViewerSetup.SETFILTER("Role Center ID", gRoleIDFilter);
+      lBFWebViewerSetup.SETRANGE(Default,TRUE);
+
+      IF lBFWebViewerSetup.FINDFIRST THEN
+        gURL := lBFWebViewerSetup.URL
+      ELSE BEGIN
+        lBFWebViewerSetup.SETRANGE(Default);
+        IF lBFWebViewerSetup.FINDFIRST THEN
+          gURL := lBFWebViewerSetup.URL;
+      END;
+      lBFWebViewerSetup.SETRANGE(Default);
+
+      gShowGetStarted := gURL = '';
+    END;
+
+    LOCAL PROCEDURE FilterRoleCenter@50001();
+    BEGIN
+      FILTERGROUP(3);
+      gRoleIDFilter := GETFILTER("Role Center ID");
+      FILTERGROUP(0);
+    END;
+
+    LOCAL PROCEDURE SelectURL@50002();
+    BEGIN
+      CLEAR(gBFWebViewerSetupPage);
+
+      gBFWebViewerSetup.SETFILTER("Role Center ID", gRoleIDFilter);
+      gBFWebViewerSetupPage.SETTABLEVIEW(gBFWebViewerSetup);
+
+      IF gBFWebViewerSetupPage.RUNMODAL = ACTION :: OK THEN BEGIN
+        gBFWebViewerSetupPage.GETRECORD(gBFWebViewerSetup);
+        gURL := gBFWebViewerSetup.URL;
+
+        gShowGetStarted := gURL = '';
+
+        SetIsShowFullScreenAvailable;
+
+        CurrPage.UPDATE(FALSE);
+
+        IF gURL <> '' THEN
+          CurrPage.WebPageViewer.Navigate(gURL);
+      END;
+    END;
+
+    LOCAL PROCEDURE SetWebViewerVisibility@50003();
+    VAR
+      lBFWebViewerManagement@50000 : Codeunit 50009;
+    BEGIN
+      gShowWebViewer := lBFWebViewerManagement.IsWebViewerVisible;
+    END;
+
+    LOCAL PROCEDURE SetIsShowHideActionAvailable@50005();
+    BEGIN
+      gShowHideVisible := NOT gBFWebViewerManagement.IsEvaluationCompany;
+    END;
+
+    LOCAL PROCEDURE SetIsShowFullScreenAvailable@50004();
+    BEGIN
+      gShowExpandToFullScreen := gURL <> '';
+    END;
+
+    LOCAL PROCEDURE LaunchFullScreenViewer@50006();
+    VAR
+      lBFWebViewerFullScreen@50000 : Page 50003;
+    BEGIN
+      lBFWebViewerFullScreen.SetURL(gURL);
+      lBFWebViewerFullScreen.RUN;
+    END;
+
+    EVENT WebPageViewer@-2::ControlAddInReady@8(callbackUrl@1000 : Text);
+    BEGIN
+      IF gURL <> '' THEN
+        CurrPage.WebPageViewer.Navigate(gURL);
+    END;
+
+    EVENT WebPageViewer@-2::DocumentReady@9();
+    BEGIN
+    END;
+
+    EVENT WebPageViewer@-2::Callback@10(data@1000 : Text);
+    BEGIN
+    END;
+
+    EVENT WebPageViewer@-2::Refresh@11(callbackUrl@1000 : Text);
+    BEGIN
+      IF gURL <> '' THEN
+        CurrPage.WebPageViewer.Navigate(gURL);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

@@ -1,0 +1,55 @@
+OBJECT Page 50004 BF Web Viewer Setup
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/02/17;
+    Time=[ 7:37:00 PM];
+    Modified=Yes;
+    Version List=WEBVIEWER;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Web Viewer Setup;
+    SourceTable=Table50002;
+    DelayedInsert=Yes;
+    PageType=List;
+    AutoSplitKey=Yes;
+  }
+  CONTROLS
+  {
+    { 50000;0  ;Container ;
+                ContainerType=ContentArea }
+
+    { 50001;1  ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 50002;2  ;Field     ;
+                ToolTipML=ENU=The profile that this URL is available to.;
+                ApplicationArea=#All;
+                SourceExpr="Profile ID" }
+
+    { 50003;2  ;Field     ;
+                ToolTipML=ENU="The URL link. The URL must be a secure HTTPS address. (example: https://go.microsoft.com/fwlink/?linkid=828683)";
+                ApplicationArea=#All;
+                SourceExpr=URL }
+
+    { 50004;2  ;Field     ;
+                ToolTipML=ENU=The name of the URL. Use this to easily identify URLs for users.;
+                ApplicationArea=#All;
+                SourceExpr=Name }
+
+    { 50005;2  ;Field     ;
+                ToolTipML=ENU=The default URL will be what loads first. You can define only one default URL.;
+                ApplicationArea=#All;
+                SourceExpr=Default }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+
