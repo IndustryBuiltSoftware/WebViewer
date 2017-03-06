@@ -1,0 +1,1404 @@
+OBJECT Codeunit 50009 BF Web Viewer Management
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/02/17;
+    Time=[ 7:37:00 PM];
+    Modified=Yes;
+    Version List=WEBVIEWER;
+  }
+  PROPERTIES
+  {
+    OnRun=BEGIN
+            IF IsWebViewerVisible THEN
+              DisableWebViewerForCurrentUser
+            ELSE
+              EnableWebViewerForCurrentUser;
+          END;
+
+  }
+  CODE
+  {
+
+    LOCAL PROCEDURE EnableWebViewerForCurrentUser@50050();
+    VAR
+      lUserPreference@50050 : Record 1306;
+    BEGIN
+      lUserPreference.EnableInstruction(GetWebViewerCode);
+    END;
+
+    LOCAL PROCEDURE DisableWebViewerForCurrentUser@50051();
+    VAR
+      lUserPreference@50050 : Record 1306;
+    BEGIN
+      lUserPreference.DisableInstruction(GetWebViewerCode);
+    END;
+
+    PROCEDURE IsWebViewerVisible@50052() : Boolean;
+    VAR
+      lCompany@50000 : Record 2000000006;
+      lUserPreference@50050 : Record 1306;
+    BEGIN
+      IF IsEvaluationCompany THEN
+        EXIT(TRUE);
+
+      EXIT(NOT lUserPreference.GET(USERID,GetWebViewerCode));
+    END;
+
+    LOCAL PROCEDURE GetWebViewerCode@50053() : Code[20];
+    BEGIN
+      EXIT('WEBVIEWER');
+    END;
+
+    PROCEDURE IsEvaluationCompany@50000() : Boolean;
+    VAR
+      lCompany@50000 : Record 2000000006;
+    BEGIN
+      lCompany.GET(COMPANYNAME);
+      EXIT(lCompany."Evaluation Company");
+    END;
+
+    PROCEDURE AddURLToProfile@50001(pProfileID@50000 : Code[30];pURL@50001 : Text[250];pURLName@50003 : Text[50];pIsDefault@50002 : Boolean);
+    VAR
+      lBFWebViewerSetup@50004 : Record 50002;
+      lMissingProfileError@50005 : TextConst 'ENU=You must provide a Profile ID.';
+      lMissingURLError@50006 : TextConst 'ENU=You must provide a URL.';
+      lURLId@50007 : Integer;
+    BEGIN
+      IF pProfileID = '' THEN
+        ERROR(lMissingProfileError);
+
+      IF pURL = '' THEN
+        ERROR(lMissingURLError);
+
+      IF IsExistingURL(pProfileID,pURL) THEN
+        EXIT;
+
+      lURLId := GetNextURLId(pProfileID,pURL);
+
+      InsertURLRecord(pProfileID,lURLId,pURL,pURLName,pIsDefault);
+    END;
+
+    LOCAL PROCEDURE IsExistingURL@50006(pProfileID@50001 : Code[30];pURL@50000 : Text[250]) : Boolean;
+    VAR
+      lBFWebViewerSetup@50002 : Record 50002;
+    BEGIN
+      lBFWebViewerSetup.SETRANGE("Profile ID",pProfileID);
+      lBFWebViewerSetup.SETRANGE(URL,pURL);
+      EXIT(lBFWebViewerSetup.FINDFIRST);
+    END;
+
+    LOCAL PROCEDURE GetNextURLId@50008(pProfileID@50001 : Code[30];pURL@50000 : Text[250]) : Integer;
+    VAR
+      lBFWebViewerSetup@50002 : Record 50002;
+    BEGIN
+      lBFWebViewerSetup.SETRANGE("Profile ID",pProfileID);
+      lBFWebViewerSetup.SETRANGE(URL,pURL);
+      IF lBFWebViewerSetup.FINDLAST THEN
+        EXIT(lBFWebViewerSetup."URL ID" + 10000)
+      ELSE
+        EXIT(10000);
+    END;
+
+    LOCAL PROCEDURE InsertURLRecord@50010(pProfileID@50003 : Code[30];pURLId@50004 : Integer;pURL@50002 : Text[250];pURLName@50001 : Text[50];pIsDefault@50000 : Boolean);
+    VAR
+      lBFWebViewerSetup@50005 : Record 50002;
+    BEGIN
+      lBFWebViewerSetup.INIT;
+
+      lBFWebViewerSetup.VALIDATE("Profile ID",pProfileID);
+      lBFWebViewerSetup."URL ID" := pURLId;
+      lBFWebViewerSetup.URL := pURL;
+      lBFWebViewerSetup.VALIDATE(Default,pIsDefault);
+      lBFWebViewerSetup.Name := pURLName;
+
+      lBFWebViewerSetup.INSERT(TRUE);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+
+OBJECT Page 9022 Business Manager Role Center
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/06/17;
+    Time=[ 2:29:46 PM];
+    Modified=Yes;
+    Version List=NAVW110.00,NAVNA10.00,WEBVIEWER;
+  }
+  PROPERTIES
+  {
+    CaptionML=[ENU=Business Manager Role Center;
+               ESM=µrea de tareas del administrador de negocio;
+               FRC=Tableau de bord pour gestionnaire d'activitÇ;
+               ENC=Business Manager Role Centre];
+    PageType=RoleCenter;
+    ActionList=ACTIONS
+    {
+      { 1       ;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 4       ;1   ;ActionGroup;
+                      CaptionML=[ENU=New;
+                                 ESM=Nuevo;
+                                 FRC=Nouveau;
+                                 ENC=New] }
+      { 52      ;2   ;Action    ;
+                      CaptionML=[ENU=Sales Quote;
+                                 ESM=Cotizaci¢n venta;
+                                 FRC=Devis;
+                                 ENC=Sales Quote];
+                      ToolTipML=[ENU=Create a new sales quote where you offer items or services to a customer.;
+                                 ESM=Permite crear una nueva Cotizaci¢n de venta en la que se pueden ofrecer productos o servicios a un cliente.;
+                                 FRC=CrÇez un devis proposant des articles ou des services Ö un client.;
+                                 ENC=Create a new sales quote where you offer items or services to a customer.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 41;
+                      Image=NewSalesQuote;
+                      RunPageMode=Create }
+      { 85      ;2   ;Action    ;
+                      CaptionML=[ENU=Sales Order;
+                                 ESM=Pedido venta;
+                                 FRC=Document de vente;
+                                 ENC=Sales Order];
+                      ToolTipML=[ENU=Create a new sales order for items or services that require partial posting or order confirmation.;
+                                 ESM=Permite crear un nuevo pedido de ventas de productos o servicios que requieren un registro parcial o una confirmaci¢n de pedido.;
+                                 FRC=CrÇez un document de vente pour des articles ou des services nÇcessitant un report partiel ou une confirmation commande.;
+                                 ENC=Create a new sales order for items or services that require partial posting or order confirmation.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 42;
+                      Image=NewOrder;
+                      RunPageMode=Create }
+      { 2       ;2   ;Action    ;
+                      CaptionML=[ENU=Sales Invoice;
+                                 ESM=Factura venta;
+                                 FRC=Facture vente;
+                                 ENC=Sales Invoice];
+                      ToolTipML=[ENU=Create a new sales invoice for items or services. Quantities cannot be posted partially.;
+                                 ESM=Permite crear una nueva factura de ventas de productos o servicios. Las cantidades no se pueden registrar de forma parcial.;
+                                 FRC=CrÇez une facture vente pour des articles ou des services. Il est impossible de valider les quantitÇs partiellement.;
+                                 ENC=Create a new sales invoice for items or services. Quantities cannot be posted partially.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 43;
+                      Image=NewSalesInvoice;
+                      RunPageMode=Create }
+      { 5       ;2   ;Action    ;
+                      Name=<Page Purchase Order>;
+                      CaptionML=[ENU=Purchase Order;
+                                 ESM=Pedido compra;
+                                 FRC=Bon de commande;
+                                 ENC=Purchase Order];
+                      ToolTipML=[ENU=Create a new purchase order.;
+                                 ESM=Crea un nuevo pedido de compra.;
+                                 FRC=CrÇez un bon de commande.;
+                                 ENC=Create a new purchase order.];
+                      ApplicationArea=#Suite;
+                      RunObject=Page 50;
+                      Image=NewOrder;
+                      RunPageMode=Create }
+      { 32      ;2   ;Action    ;
+                      CaptionML=[ENU=Purchase Invoice;
+                                 ESM=Factura compra;
+                                 FRC=Facture achat;
+                                 ENC=Purchase Invoice];
+                      ToolTipML=[ENU=Create a new purchase invoice for items or services.;
+                                 ESM=Permite crear una nueva factura de compra de productos o servicios.;
+                                 FRC=CrÇez une facture achat pour les articles ou les services.;
+                                 ENC=Create a new purchase invoice for items or services.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 51;
+                      Image=NewPurchaseInvoice;
+                      RunPageMode=Create }
+      { 100     ;2   ;Action    ;
+                      CaptionML=[ENU=Customer;
+                                 ESM=Cliente;
+                                 FRC=Client;
+                                 ENC=Customer];
+                      ToolTipML=[ENU=Register a new customer.;
+                                 ESM=Permite registrar un nuevo cliente.;
+                                 FRC=Enregistrez un nouveau client.;
+                                 ENC=Register a new customer.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 21;
+                      Image=Customer;
+                      RunPageMode=Create }
+      { 101     ;2   ;Action    ;
+                      CaptionML=[ENU=Vendor;
+                                 ESM=Proveedor;
+                                 FRC=Fournisseur;
+                                 ENC=Vendor];
+                      ToolTipML=[ENU=Register a new vendor.;
+                                 ESM=Permite registrar un nuevo proveedor.;
+                                 FRC=Enregistrez un nouveau fournisseur.;
+                                 ENC=Register a new vendor.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 26;
+                      Image=Vendor;
+                      RunPageMode=Create }
+      { 89      ;1   ;ActionGroup;
+                      CaptionML=[ENU=Payments;
+                                 ESM=Pagos;
+                                 FRC=Paiements;
+                                 ENC=Payments] }
+      { 88      ;2   ;ActionGroup;
+                      CaptionML=[ENU=Process Payments;
+                                 ESM=Procesar pagos;
+                                 FRC=Traitement des paiements;
+                                 ENC=Process Payments];
+                      Image=Reconcile }
+      { 87      ;3   ;Action    ;
+                      Name=Payment Reconciliation Journals;
+                      CaptionML=[ENU=Reconcile Imported Payments;
+                                 ESM=Reconciliar pagos importados;
+                                 FRC=Rapprocher les paiements importÇs;
+                                 ENC=Reconcile Imported Payments];
+                      ToolTipML=[ENU=Reconcile your bank account by importing transactions and applying them, automatically or manually, to open customer ledger entries, open vendor ledger entries, or open bank account ledger entries.;
+                                 ESM=Permite conciliar la cuenta bancaria al importar transacciones y liquidarlas, autom†tica o manualmente, en movimientos de cliente pendientes, movimientos de proveedor pendientes o movimientos de banco pendientes.;
+                                 FRC=Effectuez un rapprochement de votre compte bancaire en important les transactions, puis en les affectant manuellement ou automatiquement, avec les Çcritures client, les Çcritures fournisseur ou les Çcritures banque.;
+                                 ENC=Reconcile your bank account by importing transactions and applying them, automatically or manually, to open customer ledger entries, open vendor ledger entries, or open bank account ledger entries.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Codeunit 9022;
+                      Image=ApplyEntries }
+      { 90      ;3   ;Action    ;
+                      Name=Import Bank Transactions;
+                      CaptionML=[ENU=Import Bank Transactions...;
+                                 ESM=Importar transacciones bancarias...;
+                                 FRC=Importer les transactions bancaires...;
+                                 ENC=Import Bank Transactions...];
+                      ToolTipML=[ENU=To start the process of reconciling new payments, import a bank feed or electronic file containing the related bank transactions.;
+                                 ESM=Para iniciar el proceso de conciliaci¢n de nuevos pagos, es necesario importar un archivo de fuente o electr¢nico del banco que contenga las transacciones bancarias relacionadas.;
+                                 FRC=Pour lancer le processus de rapprochement des nouveaux paiements, importez un flux bancaire ou un fichier Çlectronique contenant les transactions bancaires associÇes.;
+                                 ENC=To start the process of reconciling new payments, import a bank feed or electronic file containing the related bank transactions.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Codeunit 9023;
+                      Image=Import }
+      { 59      ;3   ;Action    ;
+                      CaptionML=[ENU=Register Customer Payments;
+                                 ESM=Registrar pagos de cliente;
+                                 FRC=Enregistrer les paiements client;
+                                 ENC=Register Customer Payments];
+                      ToolTipML=[ENU=Process you customers' payments by matching amounts received on your bank account with the related unpaid sales invoices, and then post the payments.;
+                                 ESM=Permite procesar los pagos de los clientes al conciliar los importes recibidos en la cuenta bancaria con las facturas de venta relacionadas no pagadas y luego registrar los pagos.;
+                                 FRC=Traitez les paiements de vos clients en faisant correspondre les montants peráus sur votre compte bancaire avec les factures de ventes impayÇes associÇes, puis reportez les paiements.;
+                                 ENC=Process you customers' payments by matching amounts received on your bank account with the related unpaid sales invoices, and then post the payments.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 981;
+                      Image=Payment }
+      { 97      ;1   ;ActionGroup;
+                      CaptionML=[ENU=Reports;
+                                 ESM=Informes;
+                                 FRC=Rapports;
+                                 ENC=Reports] }
+      { 83      ;2   ;ActionGroup;
+                      CaptionML=[ENU=Financial Statements;
+                                 ESM=Informes financieros;
+                                 FRC=Rapports financiers;
+                                 ENC=Financial Statements];
+                      Image=ReferenceData }
+      { 82      ;3   ;Action    ;
+                      CaptionML=[ENU=Balance Sheet;
+                                 ESM=Balance;
+                                 FRC=Bilan;
+                                 ENC=Balance Sheet];
+                      ToolTipML=[ENU=View a report that shows your company's assets, liabilities, and equity.;
+                                 ESM=Permite ver un informe que muestra el activo, el pasivo y los recursos propios de la empresa.;
+                                 FRC=Affichez un rapport qui prÇsente les immobilisations, les emprunts et dettes et les capitaux propres de votre compagnie.;
+                                 ENC=View a report that shows your company's assets, liabilities, and equity.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Codeunit 572;
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=Report;
+                      PromotedCategory=Report }
+      { 81      ;3   ;Action    ;
+                      CaptionML=[ENU=Income Statement;
+                                 ESM=Resultado;
+                                 FRC=êtat des revenus;
+                                 ENC=Income Statement];
+                      ToolTipML=[ENU=View a report that shows your company's income and expenses.;
+                                 ESM=Permite ver un informe que muestra los ingresos y los gastos de la empresa.;
+                                 FRC=Affichez un rapport qui prÇsente les revenus et les dÇpenses.;
+                                 ENC=View a report that shows your company's income and expenses.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Codeunit 573;
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=Report;
+                      PromotedCategory=Report }
+      { 80      ;3   ;Action    ;
+                      CaptionML=[ENU=Statement of Cash Flows;
+                                 ESM=Estado de cuenta de flujos de caja;
+                                 FRC=DÇclaration des trÇsoreries;
+                                 ENC=Statement of Cash Flows];
+                      ToolTipML=[ENU=View a financial statement that shows how changes in balance sheet accounts and income affect the company's cash holdings, displayed for operating, investing, and financing activities respectively.;
+                                 ESM=Permite ver un informe financiero que muestra de quÇ forma los cambios en las cuentas de balance de situaci¢n y en los ingresos afectan al efectivo en caja de la empresa. Dicho informe se puede ver para las actividades financieras y de explotaci¢n e inversi¢n, respectivamente.;
+                                 FRC=Affichez un Çtat financier qui prÇsente la maniäre dont les modifications apportÇes aux comptes de bilan et aux revenus ont un impact sur les liquiditÇs dÇtenues par la compagnie, affichÇes respectivement pour les activitÇs d'exploitation, d'investissement et de financement.;
+                                 ENC=View a financial statement that shows how changes in balance sheet accounts and income affect the company's cash holdings, displayed for operating, investing, and financing activities respectively.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Codeunit 574;
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=Report;
+                      PromotedCategory=Report }
+      { 78      ;3   ;Action    ;
+                      CaptionML=[ENU=Statement of Retained Earnings;
+                                 ESM=Estado de cuenta de remanentes;
+                                 FRC=DÇclaration des rÇserves;
+                                 ENC=Statement of Retained Earnings];
+                      ToolTipML=[ENU=View a report that shows your company's changes in retained earnings for a specified period by reconciling the beginning and ending retained earnings for the period, using information such as net income from the other financial statements.;
+                                 ESM=Permite ver un informe que muestra los cambios de la empresa en relaci¢n con el remanente durante un per°odo especificado al conciliar el remanente inicial y final del per°odo, mediante informaci¢n como los ingresos netos de otros informes financieros.;
+                                 FRC=Affichez un rapport qui affiche les modifications apportÇes par votre compagnie en matiäre de rÇserves pour une pÇriode donnÇe en rapprochant les rÇserves initiales et les rÇserves finales pour la pÇriode, Ö l'aide d'informations telles que les revenus nets des autres rapports financiers.;
+                                 ENC=View a report that shows your company's changes in retained earnings for a specified period by reconciling the beginning and ending retained earnings for the period, using information such as net income from the other financial statements.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Codeunit 575;
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=Report;
+                      PromotedCategory=Report }
+      { 1020000 ;3   ;Action    ;
+                      CaptionML=[ENU=Sales Taxes Collected;
+                                 ESM=Impuestos venta cobrados;
+                                 FRC=Taxes de vente prÇlevÇes;
+                                 ENC=Sales Taxes Collected];
+                      ToolTipML=[ENU=View a report that shows the sales taxes that have been collected on behalf of the authorities.;
+                                 ESM=Permite ver un informe que muestra los impuestos sobre las ventas que se han cobrado en nombre de las autoridades fiscales.;
+                                 FRC=Affichez un rapport montrant les taxes de vente qui ont ÇtÇ prÇlevÇes en faveur des autoritÇs.;
+                                 ENC=View a report that shows the sales taxes that have been collected on behalf of the authorities.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Report 24;
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=Report;
+                      PromotedCategory=Report }
+      { 21      ;1   ;ActionGroup;
+                      CaptionML=[ENU=Setup;
+                                 ESM=Configuraci¢n;
+                                 FRC=Configuration;
+                                 ENC=Setup];
+                      Image=Setup }
+      { 54      ;2   ;Action    ;
+                      CaptionML=[ENU=Company Settings;
+                                 ESM=Configuraci¢n de la empresa;
+                                 FRC=Paramätres de la compagnie;
+                                 ENC=Company Settings];
+                      ToolTipML=[ENU=Enter the company name, address, and bank information that will be inserted on your business documents.;
+                                 ESM=Permite especificar el nombre, la direcci¢n y la informaci¢n bancaria de la empresa que se insertar† en los documentos empresariales.;
+                                 FRC=Entrez le nom de la compagnie, l'adresse et les informations bancaires qui seront mentionnÇs sur vos documents professionnels.;
+                                 ENC=Enter the company name, address, and bank information that will be inserted on your business documents.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 1;
+                      Image=CompanyInformation }
+      { 27      ;2   ;Action    ;
+                      CaptionML=[ENU=Assisted Setup & Tasks;
+                                 ESM=Tareas y configuraci¢n asistida;
+                                 FRC=Configuration assistÇe et tÉches;
+                                 ENC=Assisted Setup & Tasks];
+                      ToolTipML=[ENU=Set up core functionality such as sales tax, sending documents as email, and approval workflow by running through a few pages that guide you through the information.;
+                                 ESM=Permite configurar la funcionalidad principal, como el impuesto sobre las ventas, el env°o de documentos por correo electr¢nico y el flujo de trabajo de aprobaci¢n, mediante unas pocas p†ginas que le ayudan a comprender la informaci¢n.;
+                                 FRC=Configurez les fonctionnalitÇs essentielles telles que la taxe de vente, l'envoi de documents en tant que courriel et le flux de travail approbation en parcourant quelques pages qui vous guident vers les informations.;
+                                 ENC=Set up core functionality such as sales tax, sending documents as email, and approval workflow by running through a few pages that guide you through the information.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 1801;
+                      Image=QuestionaireSetup }
+      { 49      ;2   ;ActionGroup;
+                      CaptionML=[ENU=Services & Extensions;
+                                 ESM=Servicios y extensiones;
+                                 FRC=Service et extensions;
+                                 ENC=Services & Extensions];
+                      Image=ServiceSetup }
+      { 75      ;3   ;Action    ;
+                      CaptionML=[ENU=Extensions;
+                                 ESM=Extensiones;
+                                 FRC=Extensions;
+                                 ENC=Extensions];
+                      ToolTipML=[ENU=Install Extensions for greater functionality of the system.;
+                                 ESM=Permite instalar extensiones para una mayor funcionalidad del sistema.;
+                                 FRC=Installez des extensions pour une meilleure fonctionnalitÇ du systäme.;
+                                 ENC=Install Extensions for greater functionality of the system.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 2500;
+                      Image=NonStockItemSetup }
+      { 12      ;3   ;Action    ;
+                      CaptionML=[ENU=Service Connections;
+                                 ESM=Conexiones de servicio;
+                                 FRC=Connexions au service;
+                                 ENC=Service Connections];
+                      ToolTipML=[ENU=Enable and configure external services, such as exchange rate updates, Microsoft Social Engagement, and electronic bank integration.;
+                                 ESM=Permite habilitar y configurar servicios externos, por ejemplo, actualizaciones de tipo de cambio, Microsoft Social Engagement e integraci¢n de banca electr¢nica.;
+                                 FRC=Activez et configurez des services externes, comme les mises Ö jour des taux de change, Microsoft Social Engagement et l'intÇgration de la banque Çlectronique.;
+                                 ENC=Enable and configure external services, such as exchange rate updates, Microsoft Social Engagement, and electronic bank integration.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 1279;
+                      Image=ServiceTasks }
+      { 8       ;0   ;ActionContainer;
+                      ToolTipML=[ENU=Manage your business. See KPIs, trial balance, and favorite customers.;
+                                 ESM=Permite administrar su negocio. TambiÇn permite ver los KPI, el saldo de comprobaci¢n y los clientes favoritos.;
+                                 FRC=GÇrez votre activitÇ commerciale. Examinez les KPI, la balance de vÇrification et les clients favoris.;
+                                 ENC=Manage your business. See KPIs, trial balance, and favourite customers.];
+                      ActionContainerType=HomeItems }
+      { 14      ;1   ;Action    ;
+                      CaptionML=[ENU=Customers;
+                                 ESM=Clientes;
+                                 FRC=Clients;
+                                 ENC=Customers];
+                      ToolTipML=[ENU=Open the list of customers.;
+                                 ESM=Abre la lista de clientes.;
+                                 FRC=Ouvrez la liste des clients.;
+                                 ENC=Open the list of customers.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 22 }
+      { 6       ;1   ;Action    ;
+                      CaptionML=[ENU=Vendors;
+                                 ESM=Proveedores;
+                                 FRC=Fournisseurs;
+                                 ENC=Vendors];
+                      ToolTipML=[ENU=View a list of vendors that you can buy items from.;
+                                 ESM=Permite ver una lista de proveedores a los que puede comprar productos.;
+                                 FRC=Affichez la liste des fournisseurs aupräs desquels vous pouvez acheter des articles.;
+                                 ENC=View a list of vendors that you can buy items from.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 27 }
+      { 15      ;1   ;Action    ;
+                      CaptionML=[ENU=Items;
+                                 ESM=Productos;
+                                 FRC=Articles;
+                                 ENC=Items];
+                      ToolTipML=[ENU=Open the list of items that you trade in. Items can be either an inventory item and a service.;
+                                 ESM=Abre la lista de productos que se comercializan. Los productos pueden ser un producto de inventario y un servicio.;
+                                 FRC=Ouvrez la liste des articles que vous commercialisez. Les articles peuvent àtre un article en inventaire ou un service.;
+                                 ENC=Open the list of items that you trade in. Items can be either an inventory item and a service.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 31 }
+      { 38      ;    ;ActionContainer;
+                      ActionContainerType=ActivityButtons }
+      { 39      ;1   ;ActionGroup;
+                      CaptionML=[ENU=Finance;
+                                 ESM=Finanzas;
+                                 FRC=Finance;
+                                 ENC=Finance];
+                      ToolTipML=[ENU=Collect and make payments, prepare statements, and reconcile bank accounts.;
+                                 ESM=Permite recopilar y efectuar pagos, preparar Estados de cuenta y conciliar cuentas bancarias.;
+                                 FRC=Recueillez et effectuez les paiements, prÇparez les relevÇs et rapprochez les comptes bancaires.;
+                                 ENC=Collect and make payments, prepare statements, and reconcile bank accounts.];
+                      Image=Journals }
+      { 11      ;2   ;Action    ;
+                      Name=GeneralJournals;
+                      CaptionML=[ENU=General Journals;
+                                 ESM=Diarios generales;
+                                 FRC=Journaux gÇnÇraux;
+                                 ENC=General Journals];
+                      ToolTipML=[ENU=Open the list of general journal, for example, to record or post a payment that has no related document.;
+                                 ESM=Abre la lista del diario general, por ejemplo, para registrar un pago que no tiene documentos relacionados.;
+                                 FRC=Ouvrez la liste de journal gÇnÇral, par exemple pour enregistrer ou reporter un paiement qui n'a aucun document associÇ.;
+                                 ENC=Open the list of general journal, for example, to record or post a payment that has no related document.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 251;
+                      RunPageView=WHERE(Template Type=CONST(General),
+                                        Recurring=CONST(No));
+                      Image=Journal }
+      { 3       ;2   ;Action    ;
+                      CaptionML=[ENU=Chart of Accounts;
+                                 ESM=Cat†logo de cuentas;
+                                 FRC=Plan comptable;
+                                 ENC=Chart of Accounts];
+                      ToolTipML=[ENU=View the chart of accounts.;
+                                 ESM=Permite ver el cat†logo de cuentas.;
+                                 FRC=Affichez le plan comptable.;
+                                 ENC=View the chart of accounts.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 16 }
+      { 74      ;2   ;Action    ;
+                      CaptionML=[ENU=Account Schedules;
+                                 ESM=Estructuras de cuentas;
+                                 FRC=Tableaux d'analyse;
+                                 ENC=Account Schedules];
+                      ToolTipML=[ENU=Open your account schedules to analyze figures in general ledger accounts or to compare general ledger entries with general ledger budget entries.;
+                                 ESM=Permite abrir los Estructuras de cuentas para analizar las cifras de las cuentas de contabilidad o para comparar los movimientos de contabilidad con los movimientos de presupuesto de contabilidad.;
+                                 FRC=Ouvrez vos tableaux d'analyse pour analyser les chiffres des comptes GL ou pour comparer les Çcritures et les Çcritures budget.;
+                                 ENC=Open your account schedules to analyse figures in general ledger accounts or to compare general ledger entries with general ledger budget entries.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 103 }
+      { 84      ;2   ;Action    ;
+                      CaptionML=[ENU=G/L Account Categories;
+                                 ESM=Categor°as de cuenta;
+                                 FRC=CatÇgories de compte du grand livre;
+                                 ENC=G/L Account Categories];
+                      ToolTipML=[ENU=View the categories that are created to organize G/L accounts.;
+                                 ESM=Permite ver las categor°as creadas para organizar cuentas de contabilidad.;
+                                 FRC=Affichez les catÇgories crÇÇes pour organiser les comptes du grand livre.;
+                                 ENC=View the categories that are created to organize G/L accounts.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 790 }
+      { 18      ;2   ;Action    ;
+                      Name=CashReceiptJournals;
+                      CaptionML=[ENU=Cash Receipt Journals;
+                                 ESM=Diarios de recibos de efectivo;
+                                 FRC=Journaux des encaissements;
+                                 ENC=Cash Receipt Journals];
+                      ToolTipML=[ENU=Register received payments by applying them to the related customer, vendor, or bank ledger entries.;
+                                 ESM=Permite registrar los pagos recibidos al aplicarlos a los movimientos relacionados de cliente, proveedor o banco.;
+                                 FRC=Enregistrez les paiements reáus en les affectant aux Çcritures client, fournisseur ou bancaires correspondantes.;
+                                 ENC=Register received payments by applying them to the related customer, vendor, or bank ledger entries.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 251;
+                      RunPageView=WHERE(Template Type=CONST(Cash Receipts),
+                                        Recurring=CONST(No));
+                      Image=Journals }
+      { 17      ;2   ;Action    ;
+                      Name=PaymentJournals;
+                      CaptionML=[ENU=Payment Journals;
+                                 ESM=Diarios de pagos;
+                                 FRC=Journaux des paiements;
+                                 ENC=Payment Journals];
+                      ToolTipML=[ENU=Open the list of payment journals where you can register payments to vendors.;
+                                 ESM=Abre la lista de diarios de pagos, donde puede registrar los pagos a proveedores.;
+                                 FRC=Ouvrez la liste des journaux paiement oó vous pouvez enregistrer les paiements aux fournisseurs.;
+                                 ENC=Open the list of payment journals where you can register payments to vendors.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 251;
+                      RunPageView=WHERE(Template Type=CONST(Payments),
+                                        Recurring=CONST(No));
+                      Image=Journals }
+      { 23      ;2   ;Action    ;
+                      CaptionML=[ENU=Bank Accounts;
+                                 ESM=Bancos;
+                                 FRC=Comptes bancaires;
+                                 ENC=Bank Accounts];
+                      ToolTipML=[ENU=View or set up your the customers and vendors bank accounts. You can set up any number of bank accounts for each.;
+                                 ESM=Permite ver o configurar las cuentas bancarias de clientes y proveedores. Puede configurar las cuentas bancarias que desee para cada uno.;
+                                 FRC=Affichez ou configurez les comptes bancaires de vos fournisseurs et clients. Vous pouvez configurer autant de comptes bancaires que vous le souhaitez pour chacun.;
+                                 ENC=View or set up your the customers and vendors bank accounts. You can set up any number of bank accounts for each.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 371;
+                      Image=BankAccount }
+      { 20      ;2   ;Action    ;
+                      CaptionML=[ENU=Payment Reconciliation Journals;
+                                 ESM=Diarios de conciliaci¢n de pagos;
+                                 FRC=Journaux de rapprochement bancaire;
+                                 ENC=Payment Reconciliation Journals];
+                      ToolTipML=[ENU=Open a list of journals where you can reconcile unpaid documents automatically with their related bank transactions by importing a bank statement feed or file.;
+                                 ESM=Abre una lista de diarios, donde puede conciliar autom†ticamente los documentos sin pagar con sus respectivas transacciones bancarias al importar una fuente o un archivo de Estado de cuenta bancario.;
+                                 FRC=Ouvrez une liste de journaux oó vous pouvez rapprocher automatiquement les documents impayÇs et leurs transactions bancaires associÇes en important un flux bancaire ou un fichier de relevÇ bancaire.;
+                                 ENC=Open a list of journals where you can reconcile unpaid documents automatically with their related bank transactions by importing a bank statement feed or file.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 1294;
+                      Image=ApplyEntries }
+      { 19      ;2   ;Action    ;
+                      CaptionML=[ENU=Bank Acc. Statements;
+                                 ESM=Estados de cuenta cuenta banco;
+                                 FRC=RelevÇs bancaires;
+                                 ENC=Bank Acc. Statements];
+                      ToolTipML=[ENU=View statements for selected bank accounts. For each bank transaction, the report shows a description, an applied amount, a statement amount, and other information.;
+                                 ESM=Permite ver los estados de cuenta de las cuentas bancarias seleccionadas. En cada transacci¢n bancaria, el informe muestra una descripci¢n, un importe liquidado, un importe de estado de cuenta y otra informaci¢n.;
+                                 FRC=Affichez les relevÇs des comptes bancaires sÇlectionnÇs. Pour chaque transaction bancaire, le rapport affiche une description, un montant affectÇ, un montant de relevÇ et d'autres informations.;
+                                 ENC=View statements for selected bank accounts. For each bank transaction, the report shows a description, an applied amount, a statement amount, and other information.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 389;
+                      Image=BankAccountStatement }
+      { 24      ;2   ;Action    ;
+                      CaptionML=[ENU=Direct Debit Collections;
+                                 ESM=Cobros por adeudo directo;
+                                 FRC=Recouvrements de prÇlävement;
+                                 ENC=Direct Debit Collections];
+                      RunObject=Page 1207 }
+      { 26      ;2   ;Action    ;
+                      CaptionML=[ENU=Currencies;
+                                 ESM=Divisas;
+                                 FRC=Devises;
+                                 ENC=Currencies];
+                      ToolTipML=[ENU=View the different currencies that you trade in.;
+                                 ESM=Permite ver las distintas divisas con las que se comercializa.;
+                                 FRC=Affichez les diffÇrentes devises dans lesquelles vous faites des affaires.;
+                                 ENC=View the different currencies that you trade in.];
+                      ApplicationArea=#Suite;
+                      RunObject=Page 5;
+                      Image=Currency }
+      { 25      ;2   ;Action    ;
+                      CaptionML=[ENU=Employees;
+                                 ESM=Empleados;
+                                 FRC=EmployÇs;
+                                 ENC=Employees];
+                      RunObject=Page 5201 }
+      { 28      ;2   ;Action    ;
+                      CaptionML=[ENU=VAT Statements;
+                                 ESM=Declaraciones IVA;
+                                 FRC=RelevÇs fiscaux;
+                                 ENC=Tax Statements];
+                      RunObject=Page 320 }
+      { 30      ;2   ;Action    ;
+                      CaptionML=[ENU=Intrastat Journals;
+                                 ESM=Diarios Intrastat;
+                                 FRC=Journaux Intrastat;
+                                 ENC=Intrastat Journals];
+                      RunObject=Page 327 }
+      { 40      ;1   ;ActionGroup;
+                      CaptionML=[ENU=Sales;
+                                 ESM=Ventas;
+                                 FRC=Ventes;
+                                 ENC=Sales];
+                      ToolTipML=[ENU=Make quotes, orders, and credit memos. See customers and transaction history.;
+                                 ESM=Permite realizar presupuestos, pedidos y Notas de CrÇdito. TambiÇn permite ver los clientes y el historial de transacciones.;
+                                 FRC=êtablissez des devis, des commandes et des notes de crÇdit. Consultez l'historique des clients et des transactions.;
+                                 ENC=Make quotes, orders, and credit memos. See customers and transaction history.];
+                      Image=Sales }
+      { 33      ;2   ;Action    ;
+                      Name=Sales_CustomerList;
+                      CaptionML=[ENU=Customers;
+                                 ESM=Clientes;
+                                 FRC=Clients;
+                                 ENC=Customers];
+                      ToolTipML=[ENU=Open the list of customers.;
+                                 ESM=Abre la lista de clientes.;
+                                 FRC=Ouvrez la liste des clients.;
+                                 ENC=Open the list of customers.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 22 }
+      { 29      ;2   ;Action    ;
+                      CaptionML=[ENU=Sales Quotes;
+                                 ESM=Cotizaciones venta;
+                                 FRC=Devis;
+                                 ENC=Sales Quotes];
+                      ToolTipML=[ENU=Open the list of sales quotes where you offer items or services to customers.;
+                                 ESM=Abre la lista de Cotizaciones de ventas, donde puede ofrecer productos o servicios a los clientes.;
+                                 FRC=Ouvrez la liste des devis oó vous proposez des articles ou des services aux clients.;
+                                 ENC=Open the list of sales quotes where you offer items or services to customers.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 9300 }
+      { 86      ;2   ;Action    ;
+                      CaptionML=[ENU=Sales Orders;
+                                 ESM=Pedidos venta;
+                                 FRC=Documents de vente;
+                                 ENC=Sales Orders];
+                      ToolTipML=[ENU=Open the list of sales orders where you can sell items and services.;
+                                 ESM=Abre la lista de pedidos de venta, donde puede vender productos y servicios.;
+                                 FRC=Ouvrez la liste des documents de vente oó vous pouvez vendre des articles et des services.;
+                                 ENC=Open the list of sales orders where you can sell items and services.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 9305 }
+      { 48      ;2   ;Action    ;
+                      CaptionML=[ENU=Sales Invoices;
+                                 ESM=Facturas venta;
+                                 FRC=Factures vente;
+                                 ENC=Sales Invoices];
+                      ToolTipML=[ENU=Open the list of sales invoices where you can invoice items or services.;
+                                 ESM=Abre la lista de facturas de venta, donde puede facturar productos o servicios.;
+                                 FRC=Ouvrez la liste des factures vente oó vous pouvez facturer des articles ou des services.;
+                                 ENC=Open the list of sales invoices where you can invoice items or services.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 9301 }
+      { 44      ;2   ;Action    ;
+                      CaptionML=[ENU=Sales Credit Memos;
+                                 ESM=Notas de crÇdito de venta;
+                                 FRC=Notes de crÇdit de vente;
+                                 ENC=Sales Credit Memos];
+                      ToolTipML=[ENU=Open the list of sales credit memos where you can revert posted sales invoices.;
+                                 ESM=Abre la lista de Notas de CrÇdito de venta, donde puede revertir facturas de venta registradas.;
+                                 FRC=Ouvrez la liste des notes de crÇdit de vente oó vous pouvez annuler les factures de ventes reportÇes.;
+                                 ENC=Open the list of sales credit memos where you can revert posted sales invoices.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 9302 }
+      { 37      ;2   ;Action    ;
+                      CaptionML=[ENU=Reminders;
+                                 ESM=Recordatorios;
+                                 FRC=Rappels;
+                                 ENC=Reminders];
+                      RunObject=Page 436;
+                      Image=Reminder }
+      { 35      ;2   ;Action    ;
+                      CaptionML=[ENU=Finance Charge Memos;
+                                 ESM=Docs. interÇs;
+                                 FRC=Notes de frais financiers;
+                                 ENC=Finance Charge Memos];
+                      RunObject=Page 448;
+                      Image=FinChargeMemo }
+      { 50      ;2   ;Action    ;
+                      CaptionML=[ENU=Posted Sales Invoices;
+                                 ESM=Hist¢rico facturas venta;
+                                 FRC=Factures ventes reportÇes;
+                                 ENC=Posted Sales Invoices];
+                      ToolTipML=[ENU=View the posted sales invoices.;
+                                 ESM=Permite ver las facturas de venta registradas.;
+                                 FRC=Affichez les factures de ventes reportÇes.;
+                                 ENC=View the posted sales invoices.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 143 }
+      { 45      ;2   ;Action    ;
+                      CaptionML=[ENU=Posted Sales Credit Memos;
+                                 ESM=Notas de crÇdito ventas registradas;
+                                 FRC=Notes crÇdit ventes reportÇes;
+                                 ENC=Posted Sales Credit Memos];
+                      ToolTipML=[ENU=View the posted sales credit memos.;
+                                 ESM=Permite ver las notas de crÇdito de venta registradas.;
+                                 FRC=Affichez les notes de crÇdit de vente reportÇes.;
+                                 ENC=View the posted sales credit memos.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 144 }
+      { 43      ;2   ;Action    ;
+                      CaptionML=[ENU=Issued Reminders;
+                                 ESM=Recordatorios emitidos;
+                                 FRC=Rappels Çmis;
+                                 ENC=Issued Reminders];
+                      RunObject=Page 440;
+                      Image=OrderReminder }
+      { 34      ;2   ;Action    ;
+                      CaptionML=[ENU=Issued Finance Charge Memos;
+                                 ESM=Docs. de interÇs emitidos;
+                                 FRC=Notes de frais financiers Çmises;
+                                 ENC=Issued Finance Charge Memos];
+                      RunObject=Page 452;
+                      Image=PostedMemo }
+      { 41      ;1   ;ActionGroup;
+                      CaptionML=[ENU=Purchasing;
+                                 ESM=Compra;
+                                 FRC=ProcÇdure d'achat;
+                                 ENC=Purchasing];
+                      ToolTipML=[ENU=Manage purchase invoices and credit memos. Maintain vendors and their history.;
+                                 ESM=Permite administrar facturas de compra y Notas de CrÇdito, as° como mantener proveedores y su historial.;
+                                 FRC=GÇrez les notes de crÇdit et les factures d'achat. Tenez Ö jour les fournisseurs et leur historique.;
+                                 ENC=Manage purchase invoices and credit memos. Maintain vendors and their history.];
+                      Image=AdministrationSalesPurchases }
+      { 36      ;2   ;Action    ;
+                      Name=Purchase_VendorList;
+                      CaptionML=[ENU=Vendors;
+                                 ESM=Proveedores;
+                                 FRC=Fournisseurs;
+                                 ENC=Vendors];
+                      ToolTipML=[ENU=View a list of vendors that you can buy items from.;
+                                 ESM=Permite ver una lista de proveedores a los que puede comprar productos.;
+                                 FRC=Affichez la liste des fournisseurs aupräs desquels vous pouvez acheter des articles.;
+                                 ENC=View a list of vendors that you can buy items from.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 27 }
+      { 79      ;2   ;Action    ;
+                      CaptionML=[ENU=Incoming Documents;
+                                 ESM=Documentos entrantes;
+                                 FRC=Documents entrants;
+                                 ENC=Incoming Documents];
+                      ToolTipML=[ENU=Specifies the Incoming Documents;
+                                 ESM=Especifica los documentos entrantes;
+                                 FRC=SpÇcifie les documents entrants;
+                                 ENC=Specifies the Incoming Documents];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 190;
+                      Gesture=None }
+      { 22      ;2   ;Action    ;
+                      Name=<Page Purchase Orders>;
+                      CaptionML=[ENU=Purchase Orders;
+                                 ESM=Pedidos compra;
+                                 FRC=Bons de commande;
+                                 ENC=Purchase Orders];
+                      ToolTipML=[ENU=Open the list of purchase orders where you can purchase items or services.;
+                                 ESM=Permite abrir la lista de pedidos de compra, donde pueden comprar productos o servicios.;
+                                 FRC=Ouvrez la liste des bons de commande oó vous pouvez acheter des articles ou des services.;
+                                 ENC=Open the list of purchase orders where you can purchase items or services.];
+                      ApplicationArea=#Suite;
+                      RunObject=Page 9307 }
+      { 57      ;2   ;Action    ;
+                      Name=<Page Purchase Invoices>;
+                      CaptionML=[ENU=Purchase Invoices;
+                                 ESM=Facturas compra;
+                                 FRC=Factures d'achat;
+                                 ENC=Purchase Invoices];
+                      ToolTipML=[ENU=Open the list of purchase invoices where you can purchase items or services.;
+                                 ESM=Abre la lista de facturas de compra, donde puede comprar productos o servicios.;
+                                 FRC=Ouvrez la liste des factures achat oó vous pouvez acheter des articles ou des services.;
+                                 ENC=Open the list of purchase invoices where you can purchase items or services.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 9308 }
+      { 53      ;2   ;Action    ;
+                      Name=<Page Posted Purchase Invoices>;
+                      CaptionML=[ENU=Posted Purchase Invoices;
+                                 ESM=Hist¢rico facturas compra;
+                                 FRC=Factures d'achat reportÇes;
+                                 ENC=Posted Purchase Invoices];
+                      ToolTipML=[ENU=View the posted purchase invoices.;
+                                 ESM=Permite ver las facturas de compra registradas.;
+                                 FRC=Affichez les factures d'achat reportÇes.;
+                                 ENC=View the posted purchase invoices.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 146 }
+      { 56      ;2   ;Action    ;
+                      Name=<Page Purchase Credit Memos>;
+                      CaptionML=[ENU=Purchase Credit Memos;
+                                 ESM=Notas de crÇdito de compra;
+                                 FRC=Notes de crÇdit d'achat;
+                                 ENC=Purchase Credit Memos];
+                      ToolTipML=[ENU=Open the list of purchase credit memos where you can revert posted purchase invoices.;
+                                 ESM=Abre la lista de Notas de CrÇdito de compra, donde puede revertir facturas de compra registradas.;
+                                 FRC=Ouvrez la liste des notes de crÇdit d'achat oó vous pouvez annuler les factures d'achat reportÇes.;
+                                 ENC=Open the list of purchase credit memos where you can revert posted purchase invoices.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 9309 }
+      { 51      ;2   ;Action    ;
+                      Name=<Page Posted Purchase Credit Memos>;
+                      CaptionML=[ENU=Posted Purchase Credit Memos;
+                                 ESM=Hist¢rico abono compra;
+                                 FRC=Notes de crÇdit achat reportÇes;
+                                 ENC=Posted Purchase Credit Memos];
+                      ToolTipML=[ENU=View the posted purchase credit memos.;
+                                 ESM=Permite ver el hist¢rico de notas de crÇdito de compra.;
+                                 FRC=Affichez les notes de crÇdit d'achat reportÇes.;
+                                 ENC=View the posted purchase credit memos.];
+                      ApplicationArea=#Basic,#Suite;
+                      RunObject=Page 147 }
+      { 31      ;2   ;Action    ;
+                      Name=<Page Posted Purchase Receipts>;
+                      CaptionML=[ENU=Posted Purchase Receipts;
+                                 ESM=Hist¢rico recepciones de compra;
+                                 FRC=RÇceptions achat reportÇes;
+                                 ENC=Posted Purchase Receipts];
+                      ToolTipML=[ENU=View the posted purchase receipts.;
+                                 ESM=Permite ver las recepciones de compra registradas.;
+                                 FRC=Affichez les rÇceptions achat reportÇes.;
+                                 ENC=View the posted purchase receipts.];
+                      ApplicationArea=#Suite;
+                      RunObject=Page 145 }
+      { 76      ;1   ;ActionGroup;
+                      CaptionML=[ENU=Approvals;
+                                 ESM=Aprobaciones;
+                                 FRC=Approbations;
+                                 ENC=Approvals];
+                      ToolTipML=[ENU=Approve requests made by other users.;
+                                 ESM=Permite aprobar solicitudes realizadas por otros usuarios.;
+                                 FRC=Approuvez les demandes faites par d'autres utilisateurs.;
+                                 ENC=Approve requests made by other users.] }
+      { 77      ;2   ;Action    ;
+                      CaptionML=[ENU=Requests to Approve;
+                                 ESM=Solicitudes para aprobar;
+                                 FRC=Demandes Ö approuver;
+                                 ENC=Requests to Approve];
+                      ToolTipML=[ENU=View the number of approval requests that require your approval.;
+                                 ESM=Permite ver el n£mero de solicitudes de aprobaci¢n que requieren su aprobaci¢n.;
+                                 FRC=Affichez le nombre de demandes d'approbation que vous devez approuver.;
+                                 ENC=View the number of approval requests that require your approval.];
+                      ApplicationArea=#Suite;
+                      RunObject=Page 654;
+                      Image=Approvals }
+      { 42      ;1   ;ActionGroup;
+                      CaptionML=[ENU=Advanced Finance;
+                                 ESM=Finanzas avanzadas;
+                                 FRC=Finance avancÇe;
+                                 ENC=Advanced Finance];
+                      ToolTipML=[ENU=Manage budgets, cash flows, fixed assets, tax, and analyze sales.;
+                                 ESM=Permite administrar presupuestos, flujos de caja, activos fijos, IVA y analizar ventas.;
+                                 FRC=GÇrez les budgets, la trÇsorerie, les immobilisations, la TVA, et analysez les ventes.;
+                                 ENC=Manage budgets, cash flows, fixed assets, tax, and analyse sales.];
+                      Image=AnalysisView }
+      { 63      ;2   ;Action    ;
+                      CaptionML=[ENU=G/L Budgets;
+                                 ESM=Presupuestos contables;
+                                 FRC=Budgets GL;
+                                 ENC=G/L Budgets];
+                      ToolTipML=[ENU=View summary information about the amount budgeted for each general ledger account in different time periods.;
+                                 ESM=Permite ver la informaci¢n resumida acerca del importe presupuestado para cada cuenta de contabilidad en distintos per°odos de tiempo.;
+                                 FRC=Affichez des informations rÇcapitulatives concernant le montant budgÇtÇ pour chaque compte GL de diffÇrentes pÇriodes.;
+                                 ENC=View summary information about the amount budgeted for each general ledger account in different time periods.];
+                      ApplicationArea=#Suite;
+                      RunObject=Page 121 }
+      { 62      ;2   ;Action    ;
+                      CaptionML=[ENU=Fixed Assets;
+                                 ESM=Activos fijos;
+                                 FRC=Immobilisations;
+                                 ENC=Fixed Assets];
+                      ToolTipML=[ENU=Manage periodic depreciation of your machinery or machines, keep track of your maintenance costs, manage insurance policies related to fixed assets, and monitor fixed asset statistics.;
+                                 ESM=Permite gestionar la amortizaci¢n peri¢dica de la maquinaria o las m†quinas, realizar un seguimiento de los costos de mantenimiento, gestionar p¢lizas de seguros relacionadas con activos fijos y controlar las estad°sticas de activos fijos.;
+                                 FRC=GÇrez l'amortissement pÇriodique de vos machines, assurez le suivi de vos coñts d'entretien, gÇrez les polices d'assurance associÇes aux immobilisations et surveillez les statistiques sur les immobilisations.;
+                                 ENC=Manage periodic depreciation of your machinery or machines, keep track of your maintenance costs, manage insurance policies related to fixed assets, and monitor fixed asset statistics.];
+                      ApplicationArea=#FixedAssets;
+                      RunObject=Page 5601 }
+      { 73      ;2   ;Action    ;
+                      CaptionML=[ENU=Sales Analysis Reports;
+                                 ESM=Informes de an†lisis de ventas;
+                                 FRC=Rapports d'analyse des ventes;
+                                 ENC=Sales Analysis Reports];
+                      ToolTipML=[ENU=Analyze the dynamics of your sales according to key sales performance indicators that you select, for example, sales turnover in both amounts and quantities, contribution margin, or progress of actual sales against the budget. You can also use the report to analyze your average sales prices and evaluate the sales performance of your sales force.;
+                                 ESM=Permite analizar la din†mica de las ventas en funci¢n de los indicadores clave de rendimiento de ventas seleccionados para cada caso. Por ejemplo, el total de facturaci¢n de ventas tanto en importes como en cantidades, el margen de contribuci¢n o el progreso de las ventas reales respecto del presupuesto. TambiÇn puede utilizar el informe para analizar el promedio de los precios de venta y evaluar el rendimiento de las ventas de su equipo comercial.;
+                                 FRC=Analysez la dynamique de vos ventes en fonction des indicateurs de performances des ventes clÇs que vous sÇlectionnez, par exemple le volume des ventes en matiäre de montant et de quantitÇ, la marge contributive ou l'Çvolution des ventes rÇelles par rapport au budget. Ils peuvent Çgalement servir Ö analyser vos prix de vente moyens et Ö Çvaluer les performances de vos commerciaux.;
+                                 ENC=Analyse the dynamics of your sales according to key sales performance indicators that you select, for example, sales turnover in both amounts and quantities, contribution margin, or progress of actual sales against the budget. You can also use the report to analyse your average sales prices and evaluate the sales performance of your sales force.];
+                      RunObject=Page 9376 }
+      { 72      ;2   ;Action    ;
+                      CaptionML=[ENU=Purchase Analysis Reports;
+                                 ESM=Informes de an†lisis de compras;
+                                 FRC=Rapports d'analyse des achats;
+                                 ENC=Purchase Analysis Reports];
+                      ToolTipML=[ENU=Analyze the dynamics of your purchase volumes. You can also use the report to analyze your vendors' performance and purchase prices.;
+                                 ESM=Permite analizar la din†mica de los vol£menes de compra. El informe tambiÇn se puede utilizar para analizar el rendimiento de los proveedores y los precios de compra.;
+                                 FRC=Analysez la dynamique des volumes d'achat. Ils peuvent Çgalement servir Ö analyser vos prix d'achat et Ö Çvaluer les performances de vos fournisseurs.;
+                                 ENC=Analyse the dynamics of your purchase volumes. You can also use the report to analyse your vendors' performance and purchase prices.];
+                      RunObject=Page 9375 }
+      { 71      ;2   ;Action    ;
+                      CaptionML=[ENU=Inventory Analysis Reports;
+                                 ESM=Informes de an†lisis de invent.;
+                                 FRC=Rapports d'analyse de l'inventaire;
+                                 ENC=Inventory Analysis Reports];
+                      ToolTipML=[ENU=Analyze the dynamics of your inventory according to key performance indicators that you select, for example inventory turnover. You can also use the report to analyze your inventory costs, in terms of direct and indirect costs, as well as the value and quantities of your different types of inventory.;
+                                 ESM=Permite analizar la din†mica del inventario de acuerdo con los indicadores clave de rendimiento seleccionados, por ejemplo, la rotaci¢n del inventario. TambiÇn puede utilizar el informe para analizar los Costos de inventario (Costos directos e indirectos), as° como el valor y las cantidades de los distintos tipos de inventario.;
+                                 FRC=Analysez la dynamique de votre inventaire en fonction d'indicateurs de performance clÇs sÇlectionnÇs, comme la rotation de l'inventaire. Vous pouvez Çgalement utiliser le rapport pour analyser vos coñts d'inventaire, en termes de coñts directs et indirects, ainsi que la valeur et les quantitÇs des diffÇrents types d'inventaire.;
+                                 ENC=Analyse the dynamics of your inventory according to key performance indicators that you select, for example inventory turnover. You can also use the report to analyse your inventory costs, in terms of direct and indirect costs, as well as the value and quantities of your different types of inventory.];
+                      RunObject=Page 9377 }
+      { 70      ;2   ;Action    ;
+                      CaptionML=[ENU=Tax Reports;
+                                 ESM=Informes IVA;
+                                 FRC=Rapports de TVA;
+                                 ENC=Tax Reports];
+                      RunObject=Page 744 }
+      { 68      ;2   ;Action    ;
+                      CaptionML=[ENU=Cash Flow Forecasts;
+                                 ESM=Previsiones de flujo de caja;
+                                 FRC=PrÇvisions de la trÇsorerie;
+                                 ENC=Cash Flow Forecasts];
+                      RunObject=Page 849 }
+      { 67      ;2   ;Action    ;
+                      CaptionML=[ENU=Chart of Cash Flow Accounts;
+                                 ESM=Cat†logo de cuentas de flujo de caja;
+                                 FRC=Plan comptable de trÇsorerie;
+                                 ENC=Chart of Cash Flow Accounts];
+                      RunObject=Page 851 }
+      { 66      ;2   ;Action    ;
+                      CaptionML=[ENU=Cash Flow Manual Revenues;
+                                 ESM=Ingresos manuales de flujo de caja;
+                                 FRC=OpÇrations diverses positives de trÇsorerie;
+                                 ENC=Cash Flow Manual Revenues];
+                      RunObject=Page 857 }
+      { 64      ;2   ;Action    ;
+                      CaptionML=[ENU=Cash Flow Manual Expenses;
+                                 ESM=Gastos manuales de flujo de caja;
+                                 FRC=OpÇrations diverses nÇgatives de trÇsorerie;
+                                 ENC=Cash Flow Manual Expenses];
+                      RunObject=Page 859 }
+      { 61      ;1   ;ActionGroup;
+                      CaptionML=[ENU=Self-Service;
+                                 ESM=Autoservicio;
+                                 FRC=Libre-service;
+                                 ENC=Self-Service];
+                      ToolTipML=[ENU=Manage your time sheets and assignments.;
+                                 ESM=Administrar sus hojas de horas y asignaciones.;
+                                 FRC=GÇrez vos feuilles de temps et affectations.;
+                                 ENC=Manage your time sheets and assignments.];
+                      Image=HumanResources }
+      { 60      ;2   ;Action    ;
+                      CaptionML=[ENU=Time Sheets;
+                                 ESM=Hojas de horas;
+                                 FRC=Feuilles de temps;
+                                 ENC=Time Sheets];
+                      ToolTipML=[ENU=View all time sheets.;
+                                 ESM=Permite ver todas las hojas de horas.;
+                                 FRC=Affichez toutes les feuilles de temps.;
+                                 ENC=View all time sheets.];
+                      ApplicationArea=#Suite;
+                      RunObject=Page 951 }
+    }
+  }
+  CONTROLS
+  {
+    { 13  ;0   ;Container ;
+                ContainerType=RoleCenterArea }
+
+    { 16  ;1   ;Part      ;
+                AccessByPermission=TableData 17=R;
+                ApplicationArea=#Basic,#Suite;
+                PagePartID=Page1310;
+                PartType=Page }
+
+    { 55  ;1   ;Part      ;
+                AccessByPermission=TableData 1803=R;
+                CaptionML=[ENU="";
+                           ESM="";
+                           FRC="";
+                           ENC=""];
+                ToolTipML=[ENU=Specifies the view of your business assistance;
+                           ESM=Especifica la vista de ayuda de negocio;
+                           FRC=SpÇcifie l'affichage de l'assistance de votre entreprise;
+                           ENC=Specifies the view of your business assistance];
+                ApplicationArea=#Basic,#Suite;
+                PagePartID=Page1392;
+                PartType=Page }
+
+    { 46  ;1   ;Part      ;
+                ApplicationArea=#Suite;
+                PagePartID=Page9042;
+                PartType=Page }
+
+    { 7   ;1   ;Part      ;
+                CaptionML=[ENU=Favorite Accounts;
+                           ESM=Cuentas favoritas;
+                           FRC=Comptes favoris;
+                           ENC=Favourite Accounts];
+                ApplicationArea=#Basic,#Suite;
+                PagePartID=Page9153;
+                PartType=Page }
+
+    { 9   ;1   ;Part      ;
+                AccessByPermission=TableData 17=R;
+                ApplicationArea=#Basic,#Suite;
+                PagePartID=Page1393;
+                PartType=Page }
+
+    { 96  ;1   ;Part      ;
+                ApplicationArea=#Basic,#Suite;
+                PagePartID=Page681;
+                PartType=Page }
+
+    { 98  ;1   ;Part      ;
+                ApplicationArea=#Basic,#Suite;
+                PagePartID=Page6303;
+                PartType=Page }
+
+    { 1000000000;1;Part   ;
+                SubPageView=WHERE(Role Center ID=CONST(9022));
+                PagePartID=Page50002;
+                PartType=Page }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    {
+      CurrPage."Help And Setup List".ShowFeatured;
+    }
+    END.
+  }
+}
+
+OBJECT Page 50002 BF Web Viewer
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/02/17;
+    Time=[ 7:37:00 PM];
+    Modified=Yes;
+    Version List=WEBVIEWER;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Web Viewer;
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    SourceTable=Table50002;
+    PageType=CardPart;
+    SourceTableTemporary=Yes;
+    OnOpenPage=BEGIN
+                 FilterRoleCenter;
+
+                 INIT;
+                 EVALUATE("Role Center ID",gRoleIDFilter);
+                 IF INSERT THEN;
+
+
+                 LoadStartingURL;
+                 SetIsShowHideActionAvailable;
+                 SetIsShowFullScreenAvailable;
+                 CurrPage.UPDATE(FALSE);
+               END;
+
+    OnAfterGetRecord=BEGIN
+                       SetWebViewerVisibility;
+                       CurrPage.UPDATE(FALSE);
+                     END;
+
+    ActionList=ACTIONS
+    {
+      { 50000   ;0   ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 1101769002;1 ;Action    ;
+                      Name=Show Fullscreen;
+                      ApplicationArea=#All;
+                      Promoted=Yes;
+                      Visible=gShowExpandToFullScreen;
+                      PromotedIsBig=Yes;
+                      Image=Dimensions;
+                      PromotedCategory=Process;
+                      OnAction=BEGIN
+                                 LaunchFullScreenViewer;
+                               END;
+                                }
+      { 1101769001;1 ;Action    ;
+                      Name=Select URL;
+                      ApplicationArea=#All;
+                      Image=LaunchWeb;
+                      OnAction=BEGIN
+                                 SelectURL;
+                               END;
+                                }
+      { 50002   ;1   ;Action    ;
+                      Name=Show/Hide Web Viewer;
+                      ApplicationArea=#All;
+                      RunObject=Codeunit 50009;
+                      Visible=gShowHideVisible;
+                      Image=Web }
+    }
+  }
+  CONTROLS
+  {
+    { 1   ;    ;Container ;
+                Name=Container;
+                ContainerType=ContentArea }
+
+    { 50006;1  ;Group     ;
+                Visible=FALSE;
+                GroupType=Group }
+
+    { 50004;2  ;Field     ;
+                Name=GetStarted;
+                CaptionML=ENU=GetStarted;
+                ApplicationArea=#All;
+                SourceExpr=gGetStartedMessageText;
+                Editable=false;
+                Style=StrongAccent;
+                StyleExpr=TRUE;
+                ShowCaption=No }
+
+    { 50001;1  ;Group     ;
+                Visible=gShowWebViewer;
+                GroupType=Group }
+
+    { 2   ;2   ;Field     ;
+                Name=WebPageViewer;
+                ApplicationArea=#All;
+                ControlAddIn=[Microsoft.Dynamics.Nav.Client.WebPageViewer;PublicKeyToken=31bf3856ad364e35] }
+
+  }
+  CODE
+  {
+    VAR
+      gBFWebViewerSetup@50000 : Record 50002;
+      gBFWebViewerManagement@50005 : Codeunit 50009;
+      gBFWebViewerSetupPage@50001 : Page 50004;
+      gURL@50002 : Text;
+      gRoleIDFilter@50003 : Text;
+      gShowWebViewer@50004 : Boolean;
+      gShowHideVisible@50006 : Boolean;
+      gShowGetStarted@50007 : Boolean;
+      gGetStartedMessageText@50008 : TextConst 'ENU=Get started by entering in some URLs';
+      gShowExpandToFullScreen@50009 : Boolean;
+
+    LOCAL PROCEDURE LoadStartingURL@50000();
+    VAR
+      lBFWebViewerSetup@50000 : Record 50002;
+    BEGIN
+      lBFWebViewerSetup.SETFILTER("Role Center ID", gRoleIDFilter);
+      lBFWebViewerSetup.SETRANGE(Default,TRUE);
+
+      IF lBFWebViewerSetup.FINDFIRST THEN
+        gURL := lBFWebViewerSetup.URL
+      ELSE BEGIN
+        lBFWebViewerSetup.SETRANGE(Default);
+        IF lBFWebViewerSetup.FINDFIRST THEN
+          gURL := lBFWebViewerSetup.URL;
+      END;
+      lBFWebViewerSetup.SETRANGE(Default);
+
+      gShowGetStarted := gURL = '';
+    END;
+
+    LOCAL PROCEDURE FilterRoleCenter@50001();
+    BEGIN
+      FILTERGROUP(3);
+      gRoleIDFilter := GETFILTER("Role Center ID");
+      FILTERGROUP(0);
+    END;
+
+    LOCAL PROCEDURE SelectURL@50002();
+    BEGIN
+      CLEAR(gBFWebViewerSetupPage);
+
+      gBFWebViewerSetup.SETFILTER("Role Center ID", gRoleIDFilter);
+      gBFWebViewerSetupPage.SETTABLEVIEW(gBFWebViewerSetup);
+
+      IF gBFWebViewerSetupPage.RUNMODAL = ACTION :: OK THEN BEGIN
+        gBFWebViewerSetupPage.GETRECORD(gBFWebViewerSetup);
+        gURL := gBFWebViewerSetup.URL;
+
+        gShowGetStarted := gURL = '';
+
+        SetIsShowFullScreenAvailable;
+
+        CurrPage.UPDATE(FALSE);
+
+        IF gURL <> '' THEN
+          CurrPage.WebPageViewer.Navigate(gURL);
+      END;
+    END;
+
+    LOCAL PROCEDURE SetWebViewerVisibility@50003();
+    VAR
+      lBFWebViewerManagement@50000 : Codeunit 50009;
+    BEGIN
+      gShowWebViewer := lBFWebViewerManagement.IsWebViewerVisible;
+    END;
+
+    LOCAL PROCEDURE SetIsShowHideActionAvailable@50005();
+    BEGIN
+      gShowHideVisible := NOT gBFWebViewerManagement.IsEvaluationCompany;
+    END;
+
+    LOCAL PROCEDURE SetIsShowFullScreenAvailable@50004();
+    BEGIN
+      gShowExpandToFullScreen := gURL <> '';
+    END;
+
+    LOCAL PROCEDURE LaunchFullScreenViewer@50006();
+    VAR
+      lBFWebViewerFullScreen@50000 : Page 50003;
+    BEGIN
+      lBFWebViewerFullScreen.SetURL(gURL);
+      lBFWebViewerFullScreen.RUN;
+    END;
+
+    EVENT WebPageViewer@-2::ControlAddInReady@8(callbackUrl@1000 : Text);
+    BEGIN
+      IF gURL <> '' THEN
+        CurrPage.WebPageViewer.Navigate(gURL);
+    END;
+
+    EVENT WebPageViewer@-2::DocumentReady@9();
+    BEGIN
+    END;
+
+    EVENT WebPageViewer@-2::Callback@10(data@1000 : Text);
+    BEGIN
+    END;
+
+    EVENT WebPageViewer@-2::Refresh@11(callbackUrl@1000 : Text);
+    BEGIN
+      IF gURL <> '' THEN
+        CurrPage.WebPageViewer.Navigate(gURL);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+
+OBJECT Page 50003 BF Web Viewer Full Screen
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/02/17;
+    Time=[ 7:37:00 PM];
+    Modified=Yes;
+    Version List=WEBVIEWER;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=ENU=Web Viewer;
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    LinksAllowed=No;
+    SourceTable=Table50002;
+    PageType=Card;
+    SourceTableTemporary=Yes;
+    ShowFilter=No;
+    OnOpenPage=BEGIN
+                 INIT;
+                 IF INSERT THEN;
+               END;
+
+  }
+  CONTROLS
+  {
+    { 1   ;    ;Container ;
+                Name=Container;
+                ContainerType=ContentArea }
+
+    { 2   ;1   ;Field     ;
+                Name=WebPageViewer;
+                ApplicationArea=#All;
+                ControlAddIn=[Microsoft.Dynamics.Nav.Client.WebPageViewer;PublicKeyToken=31bf3856ad364e35] }
+
+  }
+  CODE
+  {
+    VAR
+      gURL@50000 : Text;
+
+    PROCEDURE SetURL@50004(pURL@50000 : Text);
+    BEGIN
+      gURL := pURL;
+    END;
+
+    EVENT WebPageViewer@-2::ControlAddInReady@8(callbackUrl@1000 : Text);
+    BEGIN
+      CurrPage.WebPageViewer.Navigate(gURL);
+    END;
+
+    EVENT WebPageViewer@-2::DocumentReady@9();
+    BEGIN
+    END;
+
+    EVENT WebPageViewer@-2::Callback@10(data@1000 : Text);
+    BEGIN
+    END;
+
+    EVENT WebPageViewer@-2::Refresh@11(callbackUrl@1000 : Text);
+    BEGIN
+      CurrPage.WebPageViewer.Navigate(gURL);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+
+OBJECT Page 50004 BF Web Viewer Setup
+{
+  OBJECT-PROPERTIES
+  {
+    Date=03/02/17;
+    Time=[ 7:37:00 PM];
+    Modified=Yes;
+    Version List=WEBVIEWER;
+  }
+  PROPERTIES
+  {
+    CaptionML=ENU=Web Viewer Setup;
+    SourceTable=Table50002;
+    DelayedInsert=Yes;
+    PageType=List;
+    AutoSplitKey=Yes;
+  }
+  CONTROLS
+  {
+    { 50000;0  ;Container ;
+                ContainerType=ContentArea }
+
+    { 50001;1  ;Group     ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 50002;2  ;Field     ;
+                ToolTipML=ENU=The profile that this URL is available to.;
+                ApplicationArea=#All;
+                SourceExpr="Profile ID" }
+
+    { 50003;2  ;Field     ;
+                ToolTipML=ENU="The URL link. The URL must be a secure HTTPS address. (example: https://go.microsoft.com/fwlink/?linkid=828683)";
+                ApplicationArea=#All;
+                SourceExpr=URL }
+
+    { 50004;2  ;Field     ;
+                ToolTipML=ENU=The name of the URL. Use this to easily identify URLs for users.;
+                ApplicationArea=#All;
+                SourceExpr=Name }
+
+    { 50005;2  ;Field     ;
+                ToolTipML=ENU=The default URL will be what loads first. You can define only one default URL.;
+                ApplicationArea=#All;
+                SourceExpr=Default }
+
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+
